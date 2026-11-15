@@ -15,6 +15,22 @@ public class DatabaseConnection {
 
     private static Connection connection = null;
     private static boolean dbAvailable = false;
+    private static boolean simulatedOffline = false; // Toggle for demo / examiners
+
+    public static boolean isSimulatedOffline() {
+        return simulatedOffline;
+    }
+
+    public static void setSimulatedOffline(boolean offline) {
+        simulatedOffline = offline;
+        if (offline && connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException ignored) {}
+            connection = null;
+            dbAvailable = false;
+        }
+    }
 
     // Static block to initialize driver
     static {
@@ -28,6 +44,10 @@ public class DatabaseConnection {
 
     // Method to get JDBC connection
     public static Connection getConnection() {
+        if (simulatedOffline) {
+            dbAvailable = false;
+            return null;
+        }
         try {
             if (connection == null || connection.isClosed()) {
                 connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -42,6 +62,7 @@ public class DatabaseConnection {
     }
 
     public static boolean isDatabaseAvailable() {
+        if (simulatedOffline) return false;
         try {
             Connection conn = getConnection();
             return conn != null && !conn.isClosed();

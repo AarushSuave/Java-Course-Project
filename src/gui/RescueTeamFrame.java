@@ -134,12 +134,10 @@ public class RescueTeamFrame extends JFrame {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         table = new JTable(tableModel);
-        table.setRowHeight(24);
-        table.setFont(UITheme.FONT_REGULAR);
-        table.getTableHeader().setFont(UITheme.FONT_BOLD);
+        UITheme.styleTable(table);
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(new LineBorder(new Color(220, 220, 220), 1));
+        scrollPane.setBorder(new LineBorder(UITheme.BORDER_COLOR, 1));
         rightPanel.add(scrollPane, BorderLayout.CENTER);
 
         // Action Toolbar below Table

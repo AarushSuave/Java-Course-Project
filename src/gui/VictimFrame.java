@@ -1,6 +1,7 @@
 package gui;
 
 import model.Victim;
+import service.OfflineSyncService;
 import service.RescueManager;
 
 import java.awt.BorderLayout;
@@ -10,9 +11,11 @@ import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.io.File;
 import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -20,6 +23,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
@@ -171,8 +175,34 @@ public class VictimFrame extends JFrame {
             loadVictimTable(rescueManager.getAllVictims());
         });
 
+        // Triage Priority Button
+        JButton triageBtn = UITheme.createAccentButton("⚡ Emergency Triage Queue");
+        triageBtn.setToolTipText("Sort victims using medical triage PriorityQueue (Critical first)");
+        triageBtn.addActionListener(e -> {
+            List<Victim> prioritized = rescueManager.getTriagePrioritizedVictims();
+            loadVictimTable(prioritized);
+            JOptionPane.showMessageDialog(this,
+                    "Victims prioritized by Emergency Triage Protocol!\n"
+                            + "Order: Critical Medical -> Serious/Injured -> Minor -> Normal\n"
+                            + "Vulnerable age groups (seniors & children) and pending rescues are prioritized.",
+                    "Triage Priority Applied", JOptionPane.INFORMATION_MESSAGE);
+        });
+
+        // Offline Batch Export CSV
+        JButton exportBtn = UITheme.createSecondaryButton("Export CSV");
+        exportBtn.setToolTipText("Export victim records for offline pen-drive / field coordination");
+        exportBtn.addActionListener(e -> handleExportCSV());
+
+        // Offline Batch Import CSV
+        JButton importBtn = UITheme.createSecondaryButton("Import CSV");
+        importBtn.setToolTipText("Import victim records received from field teams");
+        importBtn.addActionListener(e -> handleImportCSV());
+
         searchBarPanel.add(searchBtn);
         searchBarPanel.add(resetSearchBtn);
+        searchBarPanel.add(triageBtn);
+        searchBarPanel.add(exportBtn);
+        searchBarPanel.add(importBtn);
 
         rightPanel.add(searchBarPanel, BorderLayout.NORTH);
 
@@ -183,12 +213,10 @@ public class VictimFrame extends JFrame {
             public boolean isCellEditable(int row, int column) { return false; }
         };
         JTable table = new JTable(tableModel);
-        table.setRowHeight(24);
-        table.setFont(UITheme.FONT_REGULAR);
-        table.getTableHeader().setFont(UITheme.FONT_BOLD);
+        UITheme.styleTable(table);
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(new LineBorder(new Color(220, 220, 220), 1));
+        scrollPane.setBorder(new LineBorder(UITheme.BORDER_COLOR, 1));
         rightPanel.add(scrollPane, BorderLayout.CENTER);
 
         centerPanel.add(rightPanel, BorderLayout.CENTER);
@@ -268,6 +296,46 @@ public class VictimFrame extends JFrame {
         } else {
             tableModel.setRowCount(0);
             JOptionPane.showMessageDialog(this, "No victim found matching: " + query, "Not Found", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private void handleExportCSV() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File("victims_offline_batch.csv"));
+        chooser.setFileFilter(new FileNameExtensionFilter("CSV files (*.csv)", "csv"));
+        int ret = chooser.showSaveDialog(this);
+        if (ret == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            if (!file.getName().toLowerCase().endsWith(".csv")) {
+                file = new File(file.getParentFile(), file.getName() + ".csv");
+            }
+            boolean success = OfflineSyncService.exportVictimsToCSV(rescueManager.getAllVictims(), file);
+            if (success) {
+                JOptionPane.showMessageDialog(this,
+                        "Successfully exported " + rescueManager.getAllVictims().size() + " records to:\n" + file.getAbsolutePath(),
+                        "Offline Export Completed", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to export CSV file.", "Export Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void handleImportCSV() {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setFileFilter(new FileNameExtensionFilter("CSV files (*.csv)", "csv"));
+        int ret = chooser.showOpenDialog(this);
+        if (ret == JFileChooser.APPROVE_OPTION) {
+            File file = chooser.getSelectedFile();
+            int count = OfflineSyncService.importVictimsFromCSV(file, rescueManager);
+            if (count > 0) {
+                loadVictimTable(rescueManager.getAllVictims());
+                if (parentDashboard != null) parentDashboard.refreshDashboardData();
+                JOptionPane.showMessageDialog(this,
+                        "Successfully imported / merged " + count + " victims into the local registry & sync queue!",
+                        "Offline Import Successful", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "No records imported. Please verify the CSV format.", "Import Notice", JOptionPane.WARNING_MESSAGE);
+            }
         }
     }
 

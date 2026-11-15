@@ -39,13 +39,24 @@ public class StatusMonitor extends Thread {
                 Thread.sleep(4000);
 
                 if (rescueManager != null) {
+                    // Automatically trigger offline sync when DB connection is restored
+                    if (DatabaseConnection.isDatabaseAvailable() && OfflineSyncService.getPendingCount() > 0) {
+                        OfflineSyncService.syncPendingToDatabase();
+                    }
+
                     int pendingCount = rescueManager.getPendingVictimsCount();
                     int availableTeams = rescueManager.getAvailableTeamsCount();
                     int totalShelters = rescueManager.getAllShelters().size();
+                    int pendingSync = OfflineSyncService.getPendingCount();
+                    boolean online = DatabaseConnection.isDatabaseAvailable();
+
+                    String dbStatus = online
+                            ? (pendingSync > 0 ? "🟢 Online (Syncing " + pendingSync + "...)" : "🟢 Online (Synced)")
+                            : ("🟠 Offline Mode (" + pendingSync + " pending sync)");
 
                     final String message = String.format(
-                            "● Live Monitor [Cycle %d]: Pending Victims: %d | Available Teams: %d | Total Shelters: %d",
-                            cycle++, pendingCount, availableTeams, totalShelters);
+                            "● Live Monitor [%s]: Pending Victims: %d | Available Teams: %d | Total Shelters: %d",
+                            dbStatus, pendingCount, availableTeams, totalShelters);
 
                     // Notify UI safely on Swing EDT
                     if (listener != null) {

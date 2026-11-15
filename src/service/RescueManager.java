@@ -14,10 +14,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 // Central Manager demonstrating Collections (ArrayList, HashMap, Iterator, for-each), Method Overloading, and JDBC Sync
 public class RescueManager {
@@ -120,6 +123,14 @@ public class RescueManager {
         saveVictimToDb(v);
     }
 
+    public void updateVictim(Victim v) {
+        if (!victimMap.containsKey(v.getVictimId())) {
+            victims.add(v);
+        }
+        victimMap.put(v.getVictimId(), v);
+        saveVictimToDb(v);
+    }
+
     // Method Overloading Demonstration: Adding victim by individual parameters
     public void addVictim(int id, String name, int age, String phone, String location, String medStatus, String rescueStatus) {
         Victim v = new Victim(id, name, age, phone, location, medStatus, rescueStatus);
@@ -151,9 +162,67 @@ public class RescueManager {
         if (v != null) {
             v.setRescueStatus(newStatus);
             saveVictimToDb(v);
+            if (!DatabaseConnection.isDatabaseAvailable()) {
+                OfflineSyncService.queueAction(OfflineSyncService.ACTION_STATUS_UPDATE, victimId + "|" + newStatus);
+            }
             return true;
         }
         return false;
+    }
+
+    // ==========================================
+    // EMERGENCY TRIAGE PRIORITY QUEUE
+    // ==========================================
+    // Assigns medical priority weight: Critical (4) > Serious/Injured (3) > Minor Injury (2) > Normal (1)
+    public static int getTriageSeverityWeight(String medicalStatus) {
+        if (medicalStatus == null) return 1;
+        String s = medicalStatus.trim().toLowerCase();
+        if (s.contains("critical")) return 4;
+        if (s.contains("serious") || s.contains("injured")) return 3;
+        if (s.contains("minor")) return 2;
+        return 1;
+    }
+
+    /**
+     * Triage Comparator:
+     * 1. Higher medical priority comes first (Critical -> Normal)
+     * 2. If same medical status, Pending rescue status comes before Assigned/Rescued
+     * 3. Age vulnerability: senior citizens (age >= 60) and children (age <= 12) prioritized
+     */
+    public static final Comparator<Victim> TRIAGE_COMPARATOR = (v1, v2) -> {
+        int w1 = getTriageSeverityWeight(v1.getMedicalStatus());
+        int w2 = getTriageSeverityWeight(v2.getMedicalStatus());
+        if (w1 != w2) {
+            return Integer.compare(w2, w1); // Descending (higher weight first)
+        }
+
+        boolean p1 = "Pending".equalsIgnoreCase(v1.getRescueStatus());
+        boolean p2 = "Pending".equalsIgnoreCase(v2.getRescueStatus());
+        if (p1 != p2) {
+            return p1 ? -1 : 1; // Pending comes first
+        }
+
+        boolean vuln1 = (v1.getAge() >= 60 || v1.getAge() <= 12);
+        boolean vuln2 = (v2.getAge() >= 60 || v2.getAge() <= 12);
+        if (vuln1 != vuln2) {
+            return vuln1 ? -1 : 1; // Vulnerable age first
+        }
+
+        return Integer.compare(v1.getVictimId(), v2.getVictimId());
+    };
+
+    /**
+     * Demonstrating PriorityQueue collection: returns victims sorted by Emergency Triage Priority.
+     */
+    public List<Victim> getTriagePrioritizedVictims() {
+        PriorityQueue<Victim> pq = new PriorityQueue<>(TRIAGE_COMPARATOR);
+        pq.addAll(victims);
+
+        List<Victim> sorted = new ArrayList<>();
+        while (!pq.isEmpty()) {
+            sorted.add(pq.poll());
+        }
+        return sorted;
     }
 
     // Demonstrating Iterator usage for safe removal or counting
@@ -274,6 +343,9 @@ public class RescueManager {
 
         saveTeamToDb(team);
         saveVictimToDb(victim);
+        if (!DatabaseConnection.isDatabaseAvailable()) {
+            OfflineSyncService.queueAction(OfflineSyncService.ACTION_TEAM_ASSIGN, victimId + "|" + teamId);
+        }
         return true;
     }
 
@@ -296,6 +368,9 @@ public class RescueManager {
 
         saveShelterToDb(shelter);
         saveVictimToDb(victim);
+        if (!DatabaseConnection.isDatabaseAvailable()) {
+            OfflineSyncService.queueAction(OfflineSyncService.ACTION_SHELTER_ALLOC, victimId + "|" + shelterId);
+        }
         return true;
     }
 
@@ -321,7 +396,15 @@ public class RescueManager {
 
     private void saveVictimToDb(Victim v) {
         Connection conn = DatabaseConnection.getConnection();
-        if (conn == null) return;
+        if (conn == null) {
+            // Queue into offline queue for later sync
+            String payload = String.format("%d|%s|%d|%s|%s|%s|%s|%d|%d",
+                    v.getVictimId(), v.getName(), v.getAge(), v.getPhone(),
+                    v.getLocation(), v.getMedicalStatus(), v.getRescueStatus(),
+                    v.getAssignedTeamId(), v.getAllocatedShelterId());
+            OfflineSyncService.queueAction(OfflineSyncService.ACTION_VICTIM_UPSERT, payload);
+            return;
+        }
 
         String sql = "INSERT INTO victims (victim_id, name, age, phone, location, medical_status, rescue_status, assigned_team_id, allocated_shelter_id) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) "

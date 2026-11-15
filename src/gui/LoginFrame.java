@@ -43,10 +43,10 @@ public class LoginFrame extends JFrame {
 
         // Form Card
         JPanel cardPanel = new JPanel(new GridBagLayout());
-        cardPanel.setBackground(UITheme.CARD_BG);
+        cardPanel.setBackground(Color.WHITE);
         cardPanel.setBorder(new CompoundBorder(
                 new EmptyBorder(20, 25, 20, 25),
-                new LineBorder(new Color(230, 230, 230), 1, true)
+                new LineBorder(new Color(210, 220, 232), 1, true)
         ));
 
         GridBagConstraints gbc = new GridBagConstraints();

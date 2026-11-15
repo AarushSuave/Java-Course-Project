@@ -11,14 +11,9 @@ public class Main {
         System.out.println("   Second Year Engineering Java OOP Mini Project  ");
         System.out.println("==================================================");
 
-        // Set modern UI Look & Feel safely
+        // Set System Look & Feel for crisp native UI components
         try {
-            for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName()) || "Windows".equals(info.getName())) {
-                    UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception e) {
             // Default look and feel is used
         }

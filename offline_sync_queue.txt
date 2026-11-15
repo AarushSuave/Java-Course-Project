@@ -1,0 +1,12 @@
+VICTIM_UPSERT|1001|Aarav Patel|28|9123456780|River Valley Zone B|Minor Injury|Pending|0|0
+VICTIM_UPSERT|1002|Sunita Devi|54|9123456781|North District Sector 4|Critical|Assigned|1|0
+VICTIM_UPSERT|1003|Rohan Sen|19|9123456782|Industrial Area Gate 2|Normal|Rescued|2|0
+VICTIM_UPSERT|1004|Meera Nair|42|9123456783|Downtown|Normal|Shelter Reached|0|1
+VICTIM_UPSERT|1001|Aarav Patel|28|9123456780|River Valley Zone B|Minor Injury|Pending|0|0
+VICTIM_UPSERT|1002|Sunita Devi|54|9123456781|North District Sector 4|Critical|Assigned|1|0
+VICTIM_UPSERT|1003|Rohan Sen|19|9123456782|Industrial Area Gate 2|Normal|Rescued|2|0
+VICTIM_UPSERT|1004|Meera Nair|42|9123456783|Downtown|Normal|Shelter Reached|0|1
+VICTIM_UPSERT|1001|Aarav Patel|28|9123456780|River Valley Zone B|Minor Injury|Pending|0|0
+VICTIM_UPSERT|1002|Sunita Devi|54|9123456781|North District Sector 4|Critical|Assigned|1|0
+VICTIM_UPSERT|1003|Rohan Sen|19|9123456782|Industrial Area Gate 2|Normal|Rescued|2|0
+VICTIM_UPSERT|1004|Meera Nair|42|9123456783|Downtown|Normal|Shelter Reached|0|1

@@ -117,6 +117,52 @@ public class RescueNetTest {
             System.err.println("✗ Test 6 Failed: " + e.getMessage());
         }
 
+        // Test 7: Emergency Triage PriorityQueue Verification
+        total++;
+        try {
+            RescueManager rm = RescueManager.getInstance();
+            Victim vCrit = new Victim(8881, "Critical Patient", 45, "000", "Zone A", "Critical", "Pending");
+            Victim vNorm = new Victim(8882, "Normal Patient", 25, "000", "Zone B", "Normal", "Pending");
+            rm.addVictim(vNorm);
+            rm.addVictim(vCrit);
+
+            java.util.List<Victim> prioritized = rm.getTriagePrioritizedVictims();
+            int critIdx = -1, normIdx = -1;
+            for (int i = 0; i < prioritized.size(); i++) {
+                if (prioritized.get(i).getVictimId() == 8881) critIdx = i;
+                if (prioritized.get(i).getVictimId() == 8882) normIdx = i;
+            }
+            if (critIdx != -1 && normIdx != -1 && critIdx < normIdx) {
+                System.out.println("✓ Test 7 Passed: Emergency Triage PriorityQueue (Critical prioritized over Normal)");
+                passed++;
+            } else {
+                System.err.println("✗ Test 7 Failed: PriorityQueue order incorrect!");
+            }
+        } catch (Exception e) {
+            System.err.println("✗ Test 7 Failed: " + e.getMessage());
+        }
+
+        // Test 8: Offline Sync Queue & Batch CSV Export/Import Verification
+        total++;
+        try {
+            RescueManager rm = RescueManager.getInstance();
+            File tempCsv = new File("reports/test_batch_export.csv");
+            boolean exported = service.OfflineSyncService.exportVictimsToCSV(rm.getAllVictims(), tempCsv);
+            if (exported && tempCsv.exists() && tempCsv.length() > 0) {
+                int imported = service.OfflineSyncService.importVictimsFromCSV(tempCsv, rm);
+                if (imported > 0) {
+                    System.out.println("✓ Test 8 Passed: Offline CSV Batch Export/Import (" + imported + " records processed)");
+                    passed++;
+                } else {
+                    System.err.println("✗ Test 8 Failed: CSV Import returned 0 records");
+                }
+            } else {
+                System.err.println("✗ Test 8 Failed: CSV Export file was not created");
+            }
+        } catch (Exception e) {
+            System.err.println("✗ Test 8 Failed: " + e.getMessage());
+        }
+
         System.out.println("\n==================================================");
         System.out.println("TEST RESULTS: " + passed + "/" + total + " PASSED (100% SUCCESS)");
         System.out.println("==================================================");

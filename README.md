@@ -40,11 +40,14 @@ RescueNet allows emergency response coordinators to manage relief operations acr
 | **`final` Keyword** | `final class Report`, `final String APP_VERSION`, `final` method | `service.Report.java` |
 | **User-Defined Exception** | Custom checked `ShelterFullException` | `exception.ShelterFullException.java` |
 | **Exception Handling** | `try`, `catch`, `finally`, `throw`, `throws` | `ShelterAllocationFrame.java`, `Report.java` |
-| **Collections Framework** | `ArrayList<T>`, `HashMap<K,V>`, `Iterator<T>`, `for-each` | `RescueManager.java` |
-| **File Handling** | `File`, `FileWriter`, `PrintWriter` exporting `reports/report.txt` | `Report.java` |
-| **Multithreading** | `StatusMonitor extends Thread` running periodic background updates | `StatusMonitor.java`, `DashboardFrame.java` |
-| **GUI & Event Handling** | `JFrame`, `JPanel`, `JTable`, `JButton`, `ActionListener` | `gui.*` package |
-| **Database & JDBC** | `Connection`, `PreparedStatement`, `ResultSet`, `DriverManager` | `DatabaseConnection.java`, `RescueManager.java` |
+| **Collections Framework** | `ArrayList<T>`, `HashMap<K,V>`, `PriorityQueue<T>`, `Iterator<T>`, `Comparator<T>` | `RescueManager.java` |
+| **Emergency Triage Queue** | Priority queue ordering: Critical -> Serious -> Minor -> Normal | `RescueManager.java`, `VictimFrame.java` |
+| **Offline Journal & Auto-Sync** | Persistent queue (`offline_sync_queue.txt`) auto-replayed to MySQL on reconnect | `OfflineSyncService.java`, `StatusMonitor.java` |
+| **Offline Batch CSV Transfer** | Physical mesh dispatch (Export/Import CSV for USB hand-off) | `OfflineSyncService.java`, `VictimFrame.java` |
+| **File Handling** | `File`, `FileReader`, `BufferedReader`, `FileWriter`, `PrintWriter` | `Report.java`, `OfflineSyncService.java` |
+| **Multithreading** | `StatusMonitor extends Thread` running periodic background updates & sync | `StatusMonitor.java`, `DashboardFrame.java` |
+| **GUI & Event Handling** | `JFrame`, `JPanel`, `JTable`, `JButton`, `ActionListener`, `JFileChooser` | `gui.*` package |
+| **Database & JDBC** | `Connection`, `PreparedStatement`, `ResultSet`, `DriverManager`, Transactions | `DatabaseConnection.java`, `RescueManager.java`, `OfflineSyncService.java` |
 
 ---
 
